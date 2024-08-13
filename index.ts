@@ -1,6 +1,8 @@
 import puppeteer from "puppeteer";
 import fs from "fs";
 import fetch from "node-fetch";
+import { pngValidator } from "png-validator";
+
 const wordCount = require("./wordCount.json");
 
 async function scrap() {
@@ -35,6 +37,17 @@ async function scrap() {
           ) {
             continue;
           }
+          try {
+            pngValidator(
+              await fs.promises.readFile(
+                `./wordImage/${chapter}:${verse}:${word}.png`
+              )
+            );
+          } catch (error) {
+            await fs.promises.rm(`./wordImage/${chapter}:${verse}:${word}.png`);
+            scrap();
+            break;
+          }
 
           await page.goto(
             `https://corpus.quran.com/wordmorphology.jsp?location=(${chapter}:${verse}:${word})`
@@ -67,6 +80,27 @@ async function scrap() {
           ) {
             scrap();
             break loop;
+          }
+
+          if (
+            //check if file already exists
+            await fs.promises
+              .access(`./wordImage/${chapter}:${verse}:${word}.png`)
+              .then(() => true)
+              .catch(() => false)
+          ) {
+            continue;
+          }
+          try {
+            pngValidator(
+              await fs.promises.readFile(
+                `./wordImage/${chapter}:${verse}:${word}.png`
+              )
+            );
+          } catch (error) {
+            await fs.promises.rm(`./wordImage/${chapter}:${verse}:${word}.png`);
+            scrap();
+            break;
           }
         }
       }
